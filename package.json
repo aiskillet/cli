@@ -1,0 +1,23 @@
+{
+  "name": "@aiskillet/cli",
+  "version": "0.1.0",
+  "description": "Install AI skills from the AISkillet marketplace into any tool — write once, run anywhere.",
+  "type": "module",
+  "bin": {
+    "skillet": "bin/skillet.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": ["bin", "src", "README.md", "LICENSE"],
+  "keywords": ["ai", "skills", "agents", "claude", "cursor", "mcp", "marketplace", "portability"],
+  "homepage": "https://aiskillet.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiskillet/cli.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}
