@@ -42,6 +42,23 @@ function rawUrls(entry) {
   );
 }
 
+/** Fetch a plugin bundle's manifest (plugin.json) listing its member entries. */
+export async function fetchPluginManifest(entry) {
+  const { owner, repo } = parseRepo(entry.repo);
+  const base = entry.path ? entry.path.replace(/\/+$/, "") + "/" : "";
+  for (const branch of ["main", "master"]) {
+    const res = await fetch(
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${base}plugin.json`
+    );
+    if (res.ok) {
+      const manifest = JSON.parse(await res.text());
+      manifest.includes = Array.isArray(manifest.includes) ? manifest.includes : [];
+      return manifest;
+    }
+  }
+  throw new Error(`Could not fetch plugin.json for "${entry.name}" from ${entry.repo}`);
+}
+
 /** Fetch + parse the canonical doc (SKILL.md or AGENT.md) for a catalog entry. */
 export async function fetchItem(entry) {
   for (const url of rawUrls(entry)) {

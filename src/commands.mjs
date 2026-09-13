@@ -1,7 +1,7 @@
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { loadRegistry, searchEntries, findEntry } from "./registry.mjs";
-import { fetchItem } from "./source.mjs";
+import { fetchItem, fetchPluginManifest } from "./source.mjs";
 import { compile, TARGETS } from "./compile.mjs";
 import { recordInstall, readLock, removeInstall } from "./store.mjs";
 
@@ -37,6 +37,26 @@ export async function add(name, opts) {
 
   const entries = await loadRegistry(opts.registry);
   const entry = findEntry(entries, name);
+
+  // Plugin = a bundle: install each member entry.
+  if (entry.type === "plugin") {
+    const manifest = await fetchPluginManifest(entry);
+    console.log(`Installing plugin ${bold(name)} — ${manifest.includes.length} item(s) → ${target}\n`);
+    let count = 0;
+    for (const inc of manifest.includes) {
+      const member = findEntry(entries, inc.name);
+      const item = await fetchItem(member);
+      for (const f of compile(target, item, { global: opts.global, cwd })) {
+        await mkdir(dirname(f.path), { recursive: true });
+        await writeFile(f.path, f.content);
+        await recordInstall(cwd, { name: item.name, target, path: f.path, installedAt: new Date().toISOString() });
+        console.log(`  ${ok("✓")} ${item.name} ${dim(`(${item.type})`)} → ${rel(cwd, f.path)}`);
+      }
+      count++;
+    }
+    console.log(`\n${ok("✓")} Installed plugin ${bold(name)} (${count} items) → ${target}.`);
+    return;
+  }
 
   process.stdout.write(`Resolving ${bold(name)}@aiskillet … `);
   const item = await fetchItem(entry);

@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { search, add, list, remove } from "./commands.mjs";
 import { TARGETS } from "./compile.mjs";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 
 const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Write once, run anywhere.
 
