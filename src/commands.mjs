@@ -1,7 +1,7 @@
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { loadRegistry, searchEntries, findEntry } from "./registry.mjs";
-import { fetchSkill } from "./source.mjs";
+import { fetchItem } from "./source.mjs";
 import { compile, TARGETS } from "./compile.mjs";
 import { recordInstall, readLock, removeInstall } from "./store.mjs";
 
@@ -39,22 +39,22 @@ export async function add(name, opts) {
   const entry = findEntry(entries, name);
 
   process.stdout.write(`Resolving ${bold(name)}@aiskillet … `);
-  const skill = await fetchSkill(entry);
+  const item = await fetchItem(entry);
   console.log(ok("ok"));
 
-  const files = compile(target, skill, { global: opts.global, cwd });
+  const files = compile(target, item, { global: opts.global, cwd });
   for (const f of files) {
     await mkdir(dirname(f.path), { recursive: true });
     await writeFile(f.path, f.content);
     await recordInstall(cwd, {
-      name: skill.name,
+      name: item.name,
       target,
       path: f.path,
       installedAt: new Date().toISOString(),
     });
     console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
   }
-  console.log(`\n${ok("✓")} Installed ${bold(skill.name)} → ${target}.`);
+  console.log(`\n${ok("✓")} Installed ${bold(item.name)} (${item.type}) → ${target}.`);
 }
 
 export async function list(opts) {

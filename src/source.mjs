@@ -27,17 +27,23 @@ export function parseFrontmatter(md) {
   return { data, body: m[2].trim() };
 }
 
+/** The canonical file name for an entry's type. */
+export function fileNameFor(entry) {
+  return entry.type === "agent" ? "AGENT.md" : "SKILL.md";
+}
+
 function rawUrls(entry) {
   const { owner, repo } = parseRepo(entry.repo);
   const base = entry.path ? entry.path.replace(/\/+$/, "") + "/" : "";
+  const file = fileNameFor(entry);
   return ["main", "master"].map(
     (branch) =>
-      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${base}SKILL.md`
+      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${base}${file}`
   );
 }
 
-/** Fetch + parse the SKILL.md for a catalog entry. */
-export async function fetchSkill(entry) {
+/** Fetch + parse the canonical doc (SKILL.md or AGENT.md) for a catalog entry. */
+export async function fetchItem(entry) {
   for (const url of rawUrls(entry)) {
     const res = await fetch(url);
     if (res.ok) {
@@ -46,13 +52,14 @@ export async function fetchSkill(entry) {
       return {
         md,
         body,
+        type: entry.type || "skill",
         name: data.name || entry.name,
         description: data.description || entry.description || "",
       };
     }
   }
   throw new Error(
-    `Could not fetch SKILL.md for "${entry.name}" from ${entry.repo}` +
+    `Could not fetch ${fileNameFor(entry)} for "${entry.name}" from ${entry.repo}` +
       (entry.path ? ` (path: ${entry.path})` : "")
   );
 }

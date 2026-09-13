@@ -46,6 +46,20 @@ test("compile → claude-code --global targets the home dir", () => {
   assert.doesNotMatch(file.path, /\/tmp\/p/);
 });
 
+test("compile → claude-code installs an agent under .claude/agents", () => {
+  const item = { name: "pr-reviewer", type: "agent", md: "AGENT-RAW", body: "b", description: "d" };
+  const [file] = compile("claude-code", item, { cwd: "/tmp/p" });
+  assert.match(file.path, /\.claude\/agents\/pr-reviewer\.md$/);
+  assert.equal(file.content, "AGENT-RAW");
+});
+
+test("fileNameFor picks AGENT.md for agents, SKILL.md otherwise", async () => {
+  const { fileNameFor } = await import("../src/source.mjs");
+  assert.equal(fileNameFor({ type: "agent" }), "AGENT.md");
+  assert.equal(fileNameFor({ type: "skill" }), "SKILL.md");
+  assert.equal(fileNameFor({}), "SKILL.md");
+});
+
 test("unsupported target throws", () => {
   assert.throws(() => compile("nope", { name: "x" }, {}), /Unsupported target/);
 });

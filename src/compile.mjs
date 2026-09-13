@@ -13,15 +13,17 @@ function yamlScalar(s) {
 }
 
 /**
- * Claude Code — SKILL.md is already the native format.
- * Project: <cwd>/.claude/skills/<name>/SKILL.md
- * Global:  ~/.claude/skills/<name>/SKILL.md
+ * Claude Code — SKILL.md / AGENT.md are already native formats.
+ * Skills → .claude/skills/<name>/SKILL.md
+ * Agents → .claude/agents/<name>.md
+ * (--global installs under ~/.claude instead of the project.)
  */
-function claudeCode(skill, { global, cwd }) {
-  const base = global
-    ? join(homedir(), ".claude", "skills")
-    : join(cwd, ".claude", "skills");
-  return [{ path: join(base, skill.name, "SKILL.md"), content: skill.md }];
+function claudeCode(item, { global, cwd }) {
+  const root = global ? join(homedir(), ".claude") : join(cwd, ".claude");
+  if (item.type === "agent") {
+    return [{ path: join(root, "agents", `${item.name}.md`), content: item.md }];
+  }
+  return [{ path: join(root, "skills", item.name, "SKILL.md"), content: item.md }];
 }
 
 /**
@@ -44,9 +46,10 @@ function cursor(skill, { cwd }) {
  * We write a per-skill file under .agents/skills and expect an AGENTS.md include;
  * for the MVP we emit the standalone skill file so it's portable.
  */
-function agentsMd(skill, { cwd }) {
-  const content = `# ${skill.name}\n\n> ${skill.description}\n\n${skill.body}\n`;
-  return [{ path: join(cwd, ".agents", "skills", `${skill.name}.md`), content }];
+function agentsMd(item, { cwd }) {
+  const folder = item.type === "agent" ? "agents" : "skills";
+  const content = `# ${item.name}\n\n> ${item.description}\n\n${item.body}\n`;
+  return [{ path: join(cwd, ".agents", folder, `${item.name}.md`), content }];
 }
 
 const COMPILERS = {
