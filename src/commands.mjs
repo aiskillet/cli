@@ -38,6 +38,14 @@ export async function add(name, opts) {
   const entries = await loadRegistry(opts.registry);
   const entry = findEntry(entries, name);
 
+  // MCP servers run as external processes — not compiled by skillet. Show the command.
+  if (entry.type === "mcp") {
+    console.log(`${bold(name)} is an MCP server. Add it to Claude Code with:\n`);
+    console.log(`  ${entry.install}\n`);
+    console.log(dim(`Source: ${entry.repo}`));
+    return;
+  }
+
   // Plugin = a bundle: install each member entry.
   if (entry.type === "plugin") {
     const manifest = await fetchPluginManifest(entry);
