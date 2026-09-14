@@ -17,7 +17,11 @@
     "url": "https://github.com/aiskillet/cli.git"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepublishOnly": "node --test"
   }
 }
