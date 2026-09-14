@@ -60,6 +60,12 @@ test("fileNameFor picks AGENT.md for agents, SKILL.md otherwise", async () => {
   assert.equal(fileNameFor({}), "SKILL.md");
 });
 
+test("refsFor pins to the commit SHA when present (TOCTOU defense)", async () => {
+  const { refsFor } = await import("../src/source.mjs");
+  assert.deepEqual(refsFor({ rev: "abc1234" }), ["abc1234"]);
+  assert.deepEqual(refsFor({}), ["main", "master"]);
+});
+
 test("unsupported target throws", () => {
   assert.throws(() => compile("nope", { name: "x" }, {}), /Unsupported target/);
 });

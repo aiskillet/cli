@@ -32,13 +32,22 @@ export function fileNameFor(entry) {
   return entry.type === "agent" ? "AGENT.md" : "SKILL.md";
 }
 
+/**
+ * Which git ref(s) to fetch. If the entry pins a commit SHA (`rev`), we fetch
+ * exactly that commit — defeating TOCTOU (source can't change under us).
+ * Otherwise fall back to the default branch.
+ */
+export function refsFor(entry) {
+  return entry.rev ? [entry.rev] : ["main", "master"];
+}
+
 function rawUrls(entry) {
   const { owner, repo } = parseRepo(entry.repo);
   const base = entry.path ? entry.path.replace(/\/+$/, "") + "/" : "";
   const file = fileNameFor(entry);
-  return ["main", "master"].map(
-    (branch) =>
-      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${base}${file}`
+  return refsFor(entry).map(
+    (ref) =>
+      `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${base}${file}`
   );
 }
 
@@ -46,9 +55,9 @@ function rawUrls(entry) {
 export async function fetchPluginManifest(entry) {
   const { owner, repo } = parseRepo(entry.repo);
   const base = entry.path ? entry.path.replace(/\/+$/, "") + "/" : "";
-  for (const branch of ["main", "master"]) {
+  for (const ref of refsFor(entry)) {
     const res = await fetch(
-      `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${base}plugin.json`
+      `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${base}plugin.json`
     );
     if (res.ok) {
       const manifest = JSON.parse(await res.text());
