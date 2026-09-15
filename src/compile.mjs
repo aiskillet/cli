@@ -4,7 +4,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export const TARGETS = ["claude-code", "cursor", "agents-md"];
+export const TARGETS = ["claude-code", "cursor", "agents-md", "agentvoy"];
 
 /** Quote a value for single-line YAML only when needed. */
 function yamlScalar(s) {
@@ -52,10 +52,22 @@ function agentsMd(item, { cwd }) {
   return [{ path: join(cwd, ".agents", folder, `${item.name}.md`), content }];
 }
 
+/**
+ * AgentVoy (https://github.com/agentvoy/agentvoy) — the scaffold/guard/deploy
+ * platform. It has no native "skill" primitive; its universal artifact is
+ * agent.guard.yml + generated agent code. So we drop the capability as reusable
+ * instructions under skills/<name>.md, which the developer wires into their
+ * AgentVoy agent's system prompt. Non-destructive; never touches agent.guard.yml.
+ */
+function agentvoy(item, { cwd }) {
+  return [{ path: join(cwd, "skills", `${item.name}.md`), content: item.md }];
+}
+
 const COMPILERS = {
   "claude-code": claudeCode,
   cursor,
   "agents-md": agentsMd,
+  agentvoy,
 };
 
 /** Compile a skill for a target → array of { path, content } to write. */

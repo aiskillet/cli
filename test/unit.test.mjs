@@ -66,6 +66,12 @@ test("refsFor pins to the commit SHA when present (TOCTOU defense)", async () =>
   assert.deepEqual(refsFor({}), ["main", "master"]);
 });
 
+test("compile → agentvoy drops instructions under skills/", () => {
+  const [file] = compile("agentvoy", { name: "pr-reviewer", type: "agent", md: "RAW-INSTRUCTIONS" }, { cwd: "/tmp/p" });
+  assert.match(file.path, /\/skills\/pr-reviewer\.md$/);
+  assert.equal(file.content, "RAW-INSTRUCTIONS");
+});
+
 test("unsupported target throws", () => {
   assert.throws(() => compile("nope", { name: "x" }, {}), /Unsupported target/);
 });

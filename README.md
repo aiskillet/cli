@@ -17,6 +17,7 @@ A skill written once should run everywhere. `skillet` is the portability layer: 
 | `claude-code` | native `SKILL.md` | `.claude/skills/<name>/` (or `~/.claude/skills` with `--global`) |
 | `cursor` | `.mdc` rule with Cursor frontmatter | `.cursor/rules/<name>.mdc` |
 | `agents-md` | portable `AGENTS.md`-style skill | `.agents/skills/<name>.md` |
+| `agentvoy` | reusable agent instructions for an [AgentVoy](https://github.com/agentvoy/agentvoy) project | `skills/<name>.md` |
 
 We never execute the skill — we only read Markdown. The code stays in its source repo.
 
