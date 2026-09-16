@@ -1,17 +1,42 @@
 import { writeFile, mkdir, rm } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { loadRegistry, searchEntries, findEntry } from "./registry.mjs";
 import { fetchItem, fetchPluginManifest, isDirectRef, parseDirectRef } from "./source.mjs";
 import { compile, TARGETS } from "./compile.mjs";
-import { recordInstall, readLock, removeInstall } from "./store.mjs";
+import { recordInstall, readLock, writeLock, findInstall, hashContent } from "./store.mjs";
 
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const ok = (s) => `\x1b[32m${s}\x1b[0m`;
+const warn = (s) => `\x1b[33m${s}\x1b[0m`;
 
 function rel(cwd, p) {
   const r = relative(cwd, p);
   return r.startsWith("..") ? p : r;
+}
+
+/**
+ * Write a compiled file, protecting local edits. If the target exists and was
+ * changed since skillet installed it (or isn't managed by skillet), skip it
+ * unless `force`. Records a content hash so future add/remove can detect edits.
+ * Returns true if written.
+ */
+async function installFile(cwd, f, { name, target, force, source }) {
+  const newHash = hashContent(f.content);
+  if (existsSync(f.path) && !force) {
+    const current = hashContent(readFileSync(f.path, "utf8"));
+    if (current !== newHash) {
+      const prior = await findInstall(cwd, f.path);
+      const reason = prior && prior.hash ? "locally modified" : "exists, not managed by skillet";
+      console.log(`  ${warn("•")} skipped ${rel(cwd, f.path)} ${dim(`— ${reason} (use --force)`)}`);
+      return false;
+    }
+  }
+  await mkdir(dirname(f.path), { recursive: true });
+  await writeFile(f.path, f.content);
+  await recordInstall(cwd, { name, target, path: f.path, hash: newHash, source, installedAt: new Date().toISOString() });
+  return true;
 }
 
 export async function search(query, opts) {
@@ -43,10 +68,9 @@ export async function add(name, opts) {
     const item = await fetchItem(ref);
     console.log(ok("ok"));
     for (const f of compile(target, item, { global: opts.global, cwd })) {
-      await mkdir(dirname(f.path), { recursive: true });
-      await writeFile(f.path, f.content);
-      await recordInstall(cwd, { name: item.name, target, path: f.path, source: ref.repo, installedAt: new Date().toISOString() });
-      console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
+      if (await installFile(cwd, f, { name: item.name, target, force: opts.force, source: ref.repo })) {
+        console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
+      }
     }
     console.log(`\n${ok("✓")} Installed ${bold(item.name)} ${dim(`(${item.type}, direct)`)} → ${target}.`);
     return;
@@ -72,10 +96,9 @@ export async function add(name, opts) {
       const member = findEntry(entries, inc.name);
       const item = await fetchItem(member);
       for (const f of compile(target, item, { global: opts.global, cwd })) {
-        await mkdir(dirname(f.path), { recursive: true });
-        await writeFile(f.path, f.content);
-        await recordInstall(cwd, { name: item.name, target, path: f.path, installedAt: new Date().toISOString() });
-        console.log(`  ${ok("✓")} ${item.name} ${dim(`(${item.type})`)} → ${rel(cwd, f.path)}`);
+        if (await installFile(cwd, f, { name: item.name, target, force: opts.force })) {
+          console.log(`  ${ok("✓")} ${item.name} ${dim(`(${item.type})`)} → ${rel(cwd, f.path)}`);
+        }
       }
       count++;
     }
@@ -87,17 +110,10 @@ export async function add(name, opts) {
   const item = await fetchItem(entry);
   console.log(ok("ok"));
 
-  const files = compile(target, item, { global: opts.global, cwd });
-  for (const f of files) {
-    await mkdir(dirname(f.path), { recursive: true });
-    await writeFile(f.path, f.content);
-    await recordInstall(cwd, {
-      name: item.name,
-      target,
-      path: f.path,
-      installedAt: new Date().toISOString(),
-    });
-    console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
+  for (const f of compile(target, item, { global: opts.global, cwd })) {
+    if (await installFile(cwd, f, { name: item.name, target, force: opts.force })) {
+      console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
+    }
   }
   console.log(`\n${ok("✓")} Installed ${bold(item.name)} (${item.type}) → ${target}.`);
 }
@@ -118,13 +134,24 @@ export async function list(opts) {
 export async function remove(name, opts) {
   if (!name) throw new Error("Usage:  skillet remove <name> [--target <target>]");
   const cwd = opts.cwd || process.cwd();
-  const removed = await removeInstall(cwd, name, opts.target);
-  if (!removed.length) {
+  const lock = await readLock(cwd);
+  const match = (r) => r.name === name && (!opts.target || r.target === opts.target);
+  const matches = lock.installed.filter(match);
+  if (!matches.length) {
     console.log(`Nothing to remove for "${name}"${opts.target ? ` (target ${opts.target})` : ""}.`);
     return;
   }
-  for (const r of removed) {
+  const kept = [];
+  for (const r of matches) {
+    // Don't delete a file the user edited after install — unless --force.
+    if (!opts.force && existsSync(r.path) && r.hash && hashContent(readFileSync(r.path, "utf8")) !== r.hash) {
+      console.log(`  ${warn("•")} kept ${rel(cwd, r.path)} ${dim("— locally modified (use --force to delete)")}`);
+      kept.push(r);
+      continue;
+    }
     await rm(r.path, { force: true });
     console.log(`  ${ok("✓")} removed ${rel(cwd, r.path)} ${dim(`(${r.target})`)}`);
   }
+  lock.installed = lock.installed.filter((r) => !match(r) || kept.includes(r));
+  await writeLock(cwd, lock);
 }

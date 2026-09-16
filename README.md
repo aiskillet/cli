@@ -34,6 +34,7 @@ skillet targets                     List supported targets
 ### Options
 - `-t, --target <name>` — target tool (`claude-code`, `cursor`, `agents-md`, `agentvoy`)
 - `-g, --global` — install for the user (e.g. `~/.claude`) instead of the project
+- `-f, --force` — overwrite / remove even if the file was locally modified
 - `--registry <url>` — registry `index.json` URL or local path (env: `SKILLET_REGISTRY`)
 - `--cwd <dir>` — project directory to install into
 
@@ -49,6 +50,10 @@ skillet add https://github.com/owner/repo/tree/main/skills/x --target cursor
 ```
 
 It tries `SKILL.md`, then `AGENT.md`. Pin a commit with `@<sha>` to install exactly that revision.
+
+## Your local edits are protected
+
+skillet records a content hash at install. If you edit an installed skill locally, a later `add` **won't silently overwrite it** and `remove` **won't delete it** — both skip with a warning. Use `--force` to override.
 
 ## Private / self-hosted registry
 

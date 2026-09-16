@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { search, add, list, remove } from "./commands.mjs";
 import { TARGETS } from "./compile.mjs";
 
-export const VERSION = "0.7.0";
+export const VERSION = "0.8.0";
 
 const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Write once, run anywhere.
 
@@ -23,6 +23,7 @@ const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Wr
 \x1b[1mOptions\x1b[0m
   -t, --target <name>   Target tool to compile for
   -g, --global          Install for the user (e.g. ~/.claude) instead of the project
+  -f, --force            Overwrite / remove even if the file was locally modified
       --registry <url>   Registry index.json URL or local path (env: SKILLET_REGISTRY)
       --cwd <dir>        Project directory to install into (default: current dir)
   -h, --help             Show help
@@ -46,6 +47,7 @@ export async function main(argv) {
         target: { type: "string", short: "t" },
         registry: { type: "string" },
         global: { type: "boolean", short: "g" },
+        force: { type: "boolean", short: "f" },
         cwd: { type: "string" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },

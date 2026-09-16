@@ -84,6 +84,12 @@ test("isDirectRef + parseDirectRef handle owner/repo/path[@rev]", async () => {
   assert.equal(r.rev, "abc1234");
 });
 
+test("hashContent is stable and content-sensitive", async () => {
+  const { hashContent } = await import("../src/store.mjs");
+  assert.equal(hashContent("abc"), hashContent("abc"));
+  assert.notEqual(hashContent("abc"), hashContent("abd"));
+});
+
 test("unsupported target throws", () => {
   assert.throws(() => compile("nope", { name: "x" }, {}), /Unsupported target/);
 });
