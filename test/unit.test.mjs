@@ -72,6 +72,18 @@ test("compile → agentvoy drops instructions under skills/", () => {
   assert.equal(file.content, "RAW-INSTRUCTIONS");
 });
 
+test("isDirectRef + parseDirectRef handle owner/repo/path[@rev]", async () => {
+  const { isDirectRef, parseDirectRef } = await import("../src/source.mjs");
+  assert.equal(isDirectRef("code-review"), false);
+  assert.equal(isDirectRef("acme/tools/skills/x"), true);
+  assert.equal(isDirectRef("github:acme/tools"), true);
+  const r = parseDirectRef("acme/tools/skills/api@abc1234");
+  assert.equal(r.repo, "https://github.com/acme/tools");
+  assert.equal(r.path, "skills/api");
+  assert.equal(r.name, "api");
+  assert.equal(r.rev, "abc1234");
+});
+
 test("unsupported target throws", () => {
   assert.throws(() => compile("nope", { name: "x" }, {}), /Unsupported target/);
 });

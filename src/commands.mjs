@@ -1,7 +1,7 @@
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 import { loadRegistry, searchEntries, findEntry } from "./registry.mjs";
-import { fetchItem, fetchPluginManifest } from "./source.mjs";
+import { fetchItem, fetchPluginManifest, isDirectRef, parseDirectRef } from "./source.mjs";
 import { compile, TARGETS } from "./compile.mjs";
 import { recordInstall, readLock, removeInstall } from "./store.mjs";
 
@@ -34,6 +34,23 @@ export async function add(name, opts) {
   const target = opts.target;
   if (!target) throw new Error(`Specify a target:  --target <${TARGETS.join("|")}>`);
   const cwd = opts.cwd || process.cwd();
+
+  // Bring-your-own-repo: install straight from any repo, no catalog entry needed.
+  if (isDirectRef(name)) {
+    const ref = parseDirectRef(name);
+    const where = `${ref.repo.replace("https://github.com/", "")}${ref.path ? "/" + ref.path : ""}${ref.rev ? "@" + ref.rev.slice(0, 7) : ""}`;
+    process.stdout.write(`Resolving ${bold(where)} … `);
+    const item = await fetchItem(ref);
+    console.log(ok("ok"));
+    for (const f of compile(target, item, { global: opts.global, cwd })) {
+      await mkdir(dirname(f.path), { recursive: true });
+      await writeFile(f.path, f.content);
+      await recordInstall(cwd, { name: item.name, target, path: f.path, source: ref.repo, installedAt: new Date().toISOString() });
+      console.log(`  ${ok("✓")} ${rel(cwd, f.path)}`);
+    }
+    console.log(`\n${ok("✓")} Installed ${bold(item.name)} ${dim(`(${item.type}, direct)`)} → ${target}.`);
+    return;
+  }
 
   const entries = await loadRegistry(opts.registry);
   const entry = findEntry(entries, name);

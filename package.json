@@ -1,6 +1,6 @@
 {
   "name": "@aiskillet/cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Install AI skills from the AISkillet marketplace into any tool — write once, run anywhere.",
   "type": "module",
   "bin": {

@@ -32,10 +32,34 @@ skillet targets                     List supported targets
 ```
 
 ### Options
-- `-t, --target <name>` — target tool (`claude-code`, `cursor`, `agents-md`)
+- `-t, --target <name>` — target tool (`claude-code`, `cursor`, `agents-md`, `agentvoy`)
 - `-g, --global` — install for the user (e.g. `~/.claude`) instead of the project
 - `--registry <url>` — registry `index.json` URL or local path (env: `SKILLET_REGISTRY`)
 - `--cwd <dir>` — project directory to install into
+
+## Bring your own repo (no marketplace required)
+
+AISkillet isn't a walled garden. Install a skill or agent **straight from any public repo** — no listing, no PR. Your code stays in your repo; we only read the Markdown.
+
+```bash
+skillet add owner/repo --target cursor                      # SKILL.md / AGENT.md at repo root
+skillet add owner/repo/path/to/skill --target claude-code   # a subpath
+skillet add owner/repo/path@<commit-sha> --target agentvoy  # pin an exact commit
+skillet add https://github.com/owner/repo/tree/main/skills/x --target cursor
+```
+
+It tries `SKILL.md`, then `AGENT.md`. Pin a commit with `@<sha>` to install exactly that revision.
+
+## Private / self-hosted registry
+
+Run your own catalog for a team or private marketplace — just host an `index.json` (same shape as `aiskillet.com/index.json`) and point `skillet` at it:
+
+```bash
+export SKILLET_REGISTRY=https://skills.yourco.com/index.json
+skillet search
+# or per-command:
+skillet add internal-skill --registry https://skills.yourco.com/index.json --target cursor
+```
 
 ## Install
 

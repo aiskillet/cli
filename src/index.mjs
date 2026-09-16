@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { search, add, list, remove } from "./commands.mjs";
 import { TARGETS } from "./compile.mjs";
 
-export const VERSION = "0.6.0";
+export const VERSION = "0.7.0";
 
 const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Write once, run anywhere.
 
@@ -32,6 +32,7 @@ const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Wr
   skillet search api
   skillet add api-design --target cursor
   skillet add api-design --target claude-code --global
+  skillet add owner/repo/skills/x --target cursor   # install straight from any repo
   skillet list
 `;
 
