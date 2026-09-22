@@ -51,6 +51,14 @@ skillet add https://github.com/owner/repo/tree/main/skills/x --target cursor
 
 It tries `SKILL.md`, then `AGENT.md`. Pin a commit with `@<sha>` to install exactly that revision.
 
+## Same skills on every machine
+
+You don't sync files between PCs — you *reproduce* from the registry, like `npm install` vs. copying `node_modules`. skillet records what you install in a manifest (`.skillet/installed.json`). Commit it to your dotfiles/repo, then on any new machine:
+
+```bash
+skillet install    # replays every install from the manifest — same skills, any tool, any PC
+```
+
 ## Your local edits are protected
 
 skillet records a content hash at install. If you edit an installed skill locally, a later `add` **won't silently overwrite it** and `remove` **won't delete it** — both skip with a warning. Use `--force` to override.

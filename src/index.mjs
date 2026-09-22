@@ -1,8 +1,8 @@
 import { parseArgs } from "node:util";
-import { search, add, list, remove } from "./commands.mjs";
+import { search, add, install, list, remove } from "./commands.mjs";
 import { TARGETS } from "./compile.mjs";
 
-export const VERSION = "0.8.0";
+export const VERSION = "0.9.0";
 
 const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Write once, run anywhere.
 
@@ -12,6 +12,7 @@ const HELP = `\x1b[1m🍳 skillet\x1b[0m — install AI skills into any tool. Wr
 \x1b[1mCommands\x1b[0m
   search [query]              Search the AISkillet marketplace
   add <name> --target <t>     Compile a skill and install it for a target tool
+  install                     Reproduce every install from .skillet/installed.json (any machine)
   list                        List skills installed in this directory
   remove <name> [--target t]  Remove an installed skill
   targets                     List supported targets
@@ -77,8 +78,11 @@ export async function main(argv) {
       await search(positionals[1], values);
       break;
     case "add":
-    case "install":
       await add(positionals[1], values);
+      break;
+    case "install":
+    case "sync":
+      await install(values);
       break;
     case "list":
     case "ls":
